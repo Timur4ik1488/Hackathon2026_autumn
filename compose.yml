@@ -1,0 +1,41 @@
+networks:
+  dev:
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: dockerfile
+    container_name: hack_2026_back
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgrer+asyncpg://hack_user:8219@id:5432/hack_db
+    volumes:
+       - ./backend/app/media:/app/media
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"] 
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "8000:8000"
+    networks:
+      - dev
+
+  nginx:
+    build:
+      context: ./frontend
+      dockerfile: dockerfile
+    container_name: hack_2026_front
+    restart: unless-stopped
+    volumes:
+      - ./frontend/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./backend/app/media:/app/media:ro
+      - ./frontend/nginx/logs:/var/log/nginx
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - dev
